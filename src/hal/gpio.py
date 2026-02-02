@@ -26,19 +26,40 @@ class rpiGpio:
         self.pins = pins
         self._inited = False
 
-    def init(self):
+    def init(self) -> None:
         if self._inited:
             return
         
         gpio.setwarnings(False)
         gpio.setmode(gpio.BCM)
 
-        "set ina cs pin active low / high in default"
+        # set ina cs pin active low / high in default
         gpio.setup(self.pins.cs_ina_in_bcm, gpio.OUT, initial=gpio.HIGH)
 
-        "set gate driver enable to default low"
-        gpio,setup(self.pins.gd_enable_bcm, gpio.OUT, initial=gpio.LOW)
+        # set gate driver enable to default low
+        gpio.setup(self.pins.gd_enable_bcm, gpio.OUT, initial=gpio.LOW)
 
         self._inited = True
     
+    def deinit(self) -> None:
+        if not self._inited:
+            return
+        
+        try:
+            gpio.output(self.pins.gd_enable_bcm, gpio.LOW)
+            gpio.output(self.pins.cs_ina_in_bcm, gpio.HIGH)
+        finally:
+            gpio.cleanup()
+            self._inited = False
+    
+    # ------- INA229 IN cs controls -------
+
+    def cs_ina_in_pull(self) -> None:
+        pass
+
+    def cs_ina_in_release(self) -> None:
+        pass
+
+
+
 
