@@ -51,14 +51,23 @@ class rpiGpio:
         finally:
             gpio.cleanup()
             self._inited = False
+
+    # ------- consistency checks -------
+
+    def _require_init(self) -> None:
+        if not self._inited:
+            raise gpioError("gpio not initialized, must call rpiGpio.init() first")
     
     # ------- INA229 IN cs controls -------
 
     def cs_ina_in_pull(self) -> None:
-        pass
+        self._require_init()
+        gpio.output(self.pins.cs_ina_in_bcm, gpio.LOW)
 
     def cs_ina_in_release(self) -> None:
-        pass
+        self._require_init()
+        gpio.output(self.pins.cs_ina_in_bcm, gpio.HIGH)
+        
 
 
 
