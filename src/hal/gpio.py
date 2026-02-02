@@ -4,12 +4,12 @@ import time
 import RPi.GPIO as gpio
 
 class gpioError(RuntimeError):
-    """Errors during init or use"""
+    """errors during init or use"""
 
 @dataclass(frozen=True)
 class gpioPins():
     """
-    Note: BCM numbering is used in the code, refer to docu for translating BCM to physical pin headers
+    note: BCM numbering is used in the code, refer to docu for translating BCM to physical pin headers
 
     we have:
     - INA229 input current sensor using physical pin 22 as CS
@@ -67,8 +67,21 @@ class rpiGpio:
     def cs_ina_in_release(self) -> None:
         self._require_init()
         gpio.output(self.pins.cs_ina_in_bcm, gpio.HIGH)
-        
+    
+    # ------- Gate Driver controls -------
 
+    def set_gd_enable(self, enable: bool) -> None:
+        self._require_init()
+        gpio.output(self.pins.gd_enable_bcm, gpio, gpio.HIGH if enable else gpio.LOW)
 
-
+if __name__ == "__main__":
+    g = rpiGpio()
+    g.init()
+    try:
+        g.cs_ina_in_pull()
+        time.sleep(1e-6)
+        g.cs_ina_in_release()
+        print("INA229 CS test successful")
+    finally:
+        g.deinit()
 
