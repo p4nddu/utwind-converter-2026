@@ -13,13 +13,14 @@ class gpioPins():
 
     we have:
     - INA229 input current sensor using physical pin 22 as CS
+    - INA229 output current sensor using default ce1 / physical pin 26 (handeld by spidev)
     - MCP3208 ADC using default ce0 / physical pin 24 as CS (handled by spidev)
     - GD_ENABLE on physical pin 31
     - PWM on physical pin 32
     """
 
-    cs_ina_in_bcm = 25
-    gd_enable_bcm = 6
+    cs_ina_in_bcm: int = 25
+    gd_enable_bcm: int = 6
 
 class rpiGpio:
     def __init__(self, pins: gpioPins = gpioPins()):
@@ -49,7 +50,7 @@ class rpiGpio:
             gpio.output(self.pins.gd_enable_bcm, gpio.LOW)
             gpio.output(self.pins.cs_ina_in_bcm, gpio.HIGH)
         finally:
-            gpio.cleanup()
+            gpio.cleanup() # unsure as this resets ALL channels - some process could be using one
             self._inited = False
 
     # ------- consistency checks -------
@@ -72,7 +73,7 @@ class rpiGpio:
 
     def set_gd_enable(self, enable: bool) -> None:
         self._require_init()
-        gpio.output(self.pins.gd_enable_bcm, gpio, gpio.HIGH if enable else gpio.LOW)
+        gpio.output(self.pins.gd_enable_bcm, gpio.HIGH if enable else gpio.LOW)
 
 if __name__ == "__main__":
     g = rpiGpio()
