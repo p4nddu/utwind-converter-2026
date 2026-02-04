@@ -24,3 +24,13 @@ class rpiSpi:
         self._spi = None
         self._lock = threading.Lock()
         self._opened = False
+
+    def init(self) -> None:
+        pass
+
+    def deinit(self) -> None:
+        pass
+
+    def transfer_mcp(self, tx) -> bytes:
+        # uses ce0 as channel select
+        
