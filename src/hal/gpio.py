@@ -4,7 +4,7 @@ import time
 import RPi.GPIO as gpio
 
 class gpioError(RuntimeError):
-    """errors during init or use"""
+    """GPIO related errors"""
 
 @dataclass(frozen=True)
 class gpioPins():
@@ -22,6 +22,13 @@ class gpioPins():
     cs_ina_in_bcm: int = 25
     gd_enable_bcm: int = 6
 
+    # these pins are most likely gonna be handled by the built in spi functions so leave as none
+    # but i made it either int or none just in case we want to initialize it to something else
+    cs_ina_out_bcm: int | None = None
+    cs_mcp3208_bcm: int | None = None
+
+    # NOTE: ina_in, ina_out, and mcp3208 cs pins are all ACTIVE LOW
+
 class rpiGpio:
     def __init__(self, pins: gpioPins = gpioPins()):
         self.pins = pins
@@ -35,7 +42,10 @@ class rpiGpio:
         gpio.setmode(gpio.BCM)
 
         # set ina cs pin active low / high in default
-        gpio.setup(self.pins.cs_ina_in_bcm, gpio.OUT, initial=gpio.HIGH)
+        for pin in (self.pins.cs_ina_in_bcm, self.pins.cs_ina_out_bcm, self.pins.cs_mcp3208_bcm):
+            if pin is None:
+                continue
+            gpio.setup(pin, gpio.OUT, initial=gpio.HIGH)
 
         # set gate driver enable to default low
         gpio.setup(self.pins.gd_enable_bcm, gpio.OUT, initial=gpio.LOW)
@@ -48,41 +58,50 @@ class rpiGpio:
         
         try:
             gpio.output(self.pins.gd_enable_bcm, gpio.LOW)
-            gpio.output(self.pins.cs_ina_in_bcm, gpio.HIGH)
+            for pin in (self.pins.cs_ina_in_bcm, self.pins.cs_ina_out_bcm, self.pins.cs_mcp3208_bcm):
+                if pin is None:
+                    continue
+                gpio.output(pin, gpio.HIGH)
         finally:
             gpio.cleanup() # unsure as this resets ALL channels - some process could be using one
             self._inited = False
 
-    # ------- consistency checks -------
+    # ------- consistency checks / helper fucntions -------
 
     def _require_init(self) -> None:
         if not self._inited:
             raise gpioError("gpio not initialized, must call rpiGpio.init() first")
     
+    def _get_cs_pin(self, name: str) -> int:
+        device = name.strip().lower
+
+        if device == "ina_in":
+            return self.pins.cs_ina_in_bcm
+        if device == "ina_out":
+            if self.pins.cs_ina_out_bcm is None:
+                raise gpioError("cs_ina_out_bcm is not configured")
+            return self.pins.cs_ina_out_bcm
+        if device == "mcp3208":
+            if self.pins.cs_mcp3208_bcm is None:
+                raise gpioError("cs_mcp3208_bcm is not configured")
+            return self.pins.cs_mcp3208_bcm
+        
+        raise gpioError("unknown device name - use: ina_in, ina_out or mcp3208")
+    
     # ------- INA229 IN cs controls -------
 
-    def cs_ina_in_pull(self) -> None:
+    def cs_pull(self, name: str) -> None:
         self._require_init()
-        gpio.output(self.pins.cs_ina_in_bcm, gpio.LOW)
+        pin = self._get_cs_pin(name)
+        gpio.output(pin, gpio.LOW)
 
-    def cs_ina_in_release(self) -> None:
+    def cs_release(self, name: str) -> None:
         self._require_init()
-        gpio.output(self.pins.cs_ina_in_bcm, gpio.HIGH)
+        pin = self._get_cs_pin(name)
+        gpio.output(pin, gpio.HIGH)
     
     # ------- Gate Driver controls -------
 
     def set_gd_enable(self, enable: bool) -> None:
         self._require_init()
         gpio.output(self.pins.gd_enable_bcm, gpio.HIGH if enable else gpio.LOW)
-
-if __name__ == "__main__":
-    g = rpiGpio()
-    g.init()
-    try:
-        g.cs_ina_in_pull()
-        time.sleep(1e-6)
-        g.cs_ina_in_release()
-        print("INA229 CS test successful")
-    finally:
-        g.deinit()
-
