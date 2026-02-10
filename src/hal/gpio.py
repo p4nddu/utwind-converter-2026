@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 import time
 
-import RPi.GPIO as gpio
+try:
+    import RPi.GPIO as gpio
+except ImportError:
+    gpio = None
 
 class gpioError(RuntimeError):
     """GPIO related errors"""
@@ -73,7 +76,7 @@ class rpiGpio:
             raise gpioError("gpio not initialized, must call rpiGpio.init() first")
     
     def _get_cs_pin(self, name: str) -> int:
-        device = name.strip().lower
+        device = name.strip().lower()
 
         if device == "ina_in":
             return self.pins.cs_ina_in_bcm
