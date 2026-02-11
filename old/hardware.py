@@ -63,7 +63,7 @@ def set_duty_cycle(duty):
 
 
 
-def shutdown():
+def shutdown(): #hi
     """
     Clean up SPI and GPIO.
     """
