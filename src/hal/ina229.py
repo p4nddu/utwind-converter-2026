@@ -113,6 +113,15 @@ def read_register_24(reg):
 
    return raw # returns signed integer
 
+def twos_complement(value: int, bits: int) -> int:
+      '''
+      Reads a signed value and converts it to a negative integer in python
+      '''
+      signed = 1 <<(bits -1)
+      if value & signed:
+         return value - (1<<bits) # if the sign bit is set, subtract 2^bits to get the negative value
+      
+      return value # if the sign bit is not set, return the value as is
 
 # INA229 Initialization (AI wrote a bunch of this, read comments)
 
