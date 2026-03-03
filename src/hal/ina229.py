@@ -36,7 +36,7 @@ class ina229:
 
     # ------- low level helpers -------
     
-    @staticmethod
+   @staticmethod
    def _cmd(reg: bytes, read:bool) -> int:
       # check if reg is between 0x00 and 0x3F
       # build the initial 8 bit command
@@ -134,9 +134,15 @@ class ina229:
       # into the specified register.
       self._xfer(tx)
 
-R_SHUNT = 1  # setting 1ohm shunt resistor (update w actual value)
+CURRENT_MAX = 60 # in amps
 
-CURRENT_LSB = 1 # update w actual value
+R_SHUNT = float(2.6e-3)  # R_SHUNT < V_max / CURRENT_MAX
+                         # V_max depends on the resolution we pick (or R_SHUNT)
+                         # Option 1: V_max = 40.96 mV, R_SHUNT < 0.683 m Ohm
+                         # Option 2: V_max = 163.84 mV, R_SHUNT < 2.73 m Ohm
+                         # I think Option 1 is too small, so stick with Option 2
+
+CURRENT_LSB = float(CURRENT_MAX) / pow(2, 19) # CURRENT_MAX / 2^19, from manual
 
 SHUNT_CAL = int(13107.2 * 10e6 * CURRENT_LSB * R_SHUNT) # SHUNT_CAL calculation (from manual)
 
@@ -196,11 +202,13 @@ write_register(REG_CONFIG, 0x0000) # AI wrote
 
 # ADC_CONFIG:
 # MODE = Continuous shunt + bus (0xB)
+# Since we're not measuring power, I think we can just do 0xA (cont. shunt voltage)
 # VBUSCT = 1ms
-# VSHCT = 1ms
-# AVG = 1
-adc_config = 0xB000 | (5 << 9) | (5 << 6) # AI wrote
-write_register(REG_ADC_CONFIG, adc_config) # AI wrote, sends configuration from above to pi
+# VSHCT = 1ms <- this is typical, but maybe we can go longer
+# AVG = 1 <- discuss with leads if we want longer averaging. The basic question is how frequently do we want our samples?
+# we also have to take noise into account (can also use external filters)
+adc_config = 0xB000 | (5 << 9) | (5 << 6) 
+write_register(REG_ADC_CONFIG, adc_config) 
 
 
 # SHUNT_CAL
