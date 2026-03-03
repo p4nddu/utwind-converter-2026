@@ -15,6 +15,12 @@ REG_VBUS         = 0X05
 REG_CURRENT      = 0x07
 REG_POWER        = 0X08
 
+# Constants
+CURRENT_MAX = 14 # in amps
+R_SHUNT = float(10e-3)  # R_SHUNT < V_max / CURRENT_MAX
+CURRENT_LSB = float(CURRENT_MAX) / pow(2, 19) # CURRENT_MAX / 2^19, from manual
+SHUNT_CAL = int(13107.2 * 10e6 * CURRENT_LSB * R_SHUNT) # SHUNT_CAL calculation (from manual)
+
 @dataclass(frozen=True)
 class ina229Cal:
    r_shunt: float
@@ -133,50 +139,6 @@ class ina229:
       # The INA229 reads the command and stores the 24-bit value
       # into the specified register.
       self._xfer(tx)
-
-CURRENT_MAX = 14 # in amps
-
-R_SHUNT = float(10e-3)  # R_SHUNT < V_max / CURRENT_MAX
-
-CURRENT_LSB = float(CURRENT_MAX) / pow(2, 19) # CURRENT_MAX / 2^19, from manual
-
-SHUNT_CAL = int(13107.2 * 10e6 * CURRENT_LSB * R_SHUNT) # SHUNT_CAL calculation (from manual)
-
-
-
-# SPI Setup (AI wrote so might be wrong, but looks similar to what Eleni wrote in the other program)
-spi = spidev.SpiDev()
-spi.open(0, 0)          # Bus 0, CS 0
-spi.max_speed_hz = 1_000_000
-spi.mode = 0b01         # INA229 uses SPI mode 1
-
-
-# Helper Functions (I did most of the logic for these, but AI put it in the right 
-#syntax bc I don’t know python syntax)
-def write_register(reg, value):
-   """
-   Write 16-bit value to register
-   """
-   cmd = (reg << 2) | 0x00  # shifts register address left and adds write command
-   tx = [ cmd, (value >> 8) & 0xFF, value & 0xFF] # AI says pi takes one byte at a time, so this breaks up the full thing (24 bits) into the three bytes (8 bits each): cmd from prev line, first 8 bits of input data, second 8 bits of input data
-   spi.xfer2(tx) # sending to pi one byte at a time (AI wrote, might be wrong)
-
-
-def read_register_24(reg):
-   """
-   Read 24-bit signed register (where current is)
-   """
-   cmd = (reg << 2) | 0x01  # Read command, same as above
-   rx = spi.xfer2([cmd, 0x00, 0x00, 0x00]) # reads the three bytes from sensor [23:4]
-   raw = (rx[1] << 16) | (rx[2] << 8) | rx[3] # puts three bytes into one variable
-
-
-   # Convert from 24-bit two's complement
-   if raw & 0x800000: # AI says this checks if the number is negative
-       raw -= 1 << 24 # converts to signed integer 
-
-
-   return raw # returns signed integer
 
 def twos_complement(value: int, bits: int) -> int:
       '''
