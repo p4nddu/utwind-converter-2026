@@ -134,13 +134,9 @@ class ina229:
       # into the specified register.
       self._xfer(tx)
 
-CURRENT_MAX = 60 # in amps
+CURRENT_MAX = 14 # in amps
 
-R_SHUNT = float(2.6e-3)  # R_SHUNT < V_max / CURRENT_MAX
-                         # V_max depends on the resolution we pick (or R_SHUNT)
-                         # Option 1: V_max = 40.96 mV, R_SHUNT < 0.683 m Ohm
-                         # Option 2: V_max = 163.84 mV, R_SHUNT < 2.73 m Ohm
-                         # I think Option 1 is too small, so stick with Option 2
+R_SHUNT = float(10e-3)  # R_SHUNT < V_max / CURRENT_MAX
 
 CURRENT_LSB = float(CURRENT_MAX) / pow(2, 19) # CURRENT_MAX / 2^19, from manual
 
@@ -192,7 +188,7 @@ def twos_complement(value: int, bits: int) -> int:
       
       return value # if the sign bit is not set, return the value as is
 
-# INA229 Initialization (AI wrote a bunch of this, read comments)
+# INA229 Initialization 
 
 
 # CONFIG:
