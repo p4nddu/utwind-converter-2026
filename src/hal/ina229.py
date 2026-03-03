@@ -64,19 +64,82 @@ class ina229:
       # writes a 16 bit value to a register
       pass
    
-   def 
-   
+   def read_s24(self, reg: int) -> int:
+      '''
+      Read a signed 24-bit register from INA229
+      '''
 
+      # Build the SPI command byte for this register.
+      # - 'reg' is the register address inside the INA229
+      # - read=True means we want to read, not write
+      cmd = self._cmd(reg, read=True)
 
-
-
+      #   cmd   → tells INA229 which register to read
+      #   0x00  → dummy byte, three dummy bytes (clock out 3 data bytes)
     
+      rx = self._xfer(bytes([cmd, 0x00, 0x00, 0x00]))
+
+      # Reconstruct the 24-bit register value from three received bytes.
+      # Shift each byte into its correct bit position and OR them together. --> Not familiar with this, done by AI
+      raw = (rx[1] << 16) | (rx[2] << 8) | rx[3] #combines three separate bytes into one 24-bit number.
+
+      # Convert from 24-bit two's complement to a Python signed integer.
+      # 0x800000 = binary 1000 0000 0000 0000 0000 0000
+      # This checks if the sign bit (bit 23) is set.
+      # If it is set, the number represents a negative value.
+      if raw & 0x800000:
+          # Subtract 2^24 to convert the raw unsigned number
+          # into a signed negative Python integer.
+          raw -= 1 << 24
+
+      # Return the signed measurement value.
+      # Return is a raw number and must be scaled (e.g. by CURRENT_LSB) to become a real physical quantity.
+      return raw
+
+   def write_u24(self, reg: int, value: int) -> None:
+      '''
+      Write a 24-bit value to a register.
+      Most INA229 24-bit registers are read-only,
+      but this function exists for completeness.
+      '''
+
+      #Point of write: Splits a 24-bit number into bytes, sends them to the INA229, INA229 stores them internally
+
+      # Check that the value fits in 24 bits.
+      # Valid range: 0 to (2^24 - 1)
+      # This prevents accidentally sending too much data.
+      if not (0 <= value < (1 << 24)):
+         raise inaError("24-bit value out of range")
+
+      # Build the SPI command byte for a write operation.
+      # read=False means this is a write command.
+      cmd = self._cmd(reg, read=False)
+
+      # Build the byte sequence to send over SPI.
+      # Byte 0 → command byte (register address + write bit)
+      # Byte 1 → upper 8 bits of the 24-bit value
+      # Byte 2 → middle 8 bits
+      # Byte 3 → lower 8 bits
+
+      # Bit shifts extract the correct part of the value.
+      tx = bytes([
+         cmd,                     # Command byte
+         (value >> 16) & 0xFF,    # Bits 23–16
+         (value >> 8) & 0xFF,     # Bits 15–8
+         value & 0xFF             # Bits 7–0
+      ])
+
+      # Send the bytes over SPI.
+      # The INA229 reads the command and stores the 24-bit value
+      # into the specified register.
+      self._xfer(tx)
 
 R_SHUNT = 1  # setting 1ohm shunt resistor (update w actual value)
 
 CURRENT_LSB = 1 # update w actual value
 
 SHUNT_CAL = int(13107.2 * 10e6 * CURRENT_LSB * R_SHUNT) # SHUNT_CAL calculation (from manual)
+
 
 
 # SPI Setup (AI wrote so might be wrong, but looks similar to what Eleni wrote in the other program)
