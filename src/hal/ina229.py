@@ -148,11 +148,12 @@ class ina229:
 
 calibration = ina229Cal(R_SHUNT, CURRENT_MAX, CURRENT_LSB, 0)
 spi_obj = rpiSpi()
+spi_obj.init()
 sensor = ina229(spi_obj, 'ina_in', calibration)
 
 # CONFIG:
 # ADCRANGE = 0 (+/-163.84 mV)
-sensor.write_u16(REG_CONFIG, 0x0000) # AI wrote
+sensor.write_u16(REG_CONFIG, 0x0000)
 
 
 # ADC_CONFIG:
@@ -167,18 +168,17 @@ sensor.write_u16(REG_ADC_CONFIG, adc_config)
 
 
 # SHUNT_CAL
-sensor.write_u16(REG_SHUNT_CAL, SHUNT_CAL) # sets up values for shunt resistor in sensor
+sensor.write_u16(REG_SHUNT_CAL, sensor.cal.r_shunt) # sets up values for shunt resistor in sensor
 
 
 # Give time for first conversion (AI says we need this)
 time.sleep(0.1)
 
-while True: # infinite loop
-       raw_current = sensor.read_s24(REG_CURRENT) # reads raw current value from sensor
-       current_amps = raw_current * CURRENT_LSB # converts raw current to actual value (from manual)
-
-
-       print(f"Current: {current_amps} A") # prints current (I wasn’t sure what to do with it)
-
-
-       time.sleep(0.5) # AI says this makes it update twice per second
+try:
+   while True: # infinite loop
+      raw_current = sensor.read_s24(REG_CURRENT) # reads raw current value from sensor
+      current_amps = raw_current * CURRENT_LSB # converts raw current to actual value (from manual)
+      print(f"Current: {current_amps} A") # prints current (I wasn’t sure what to do with it)
+      time.sleep(0.5) # AI says this makes it update twice per second
+except spiError:
+   spi_obj.deinit()
