@@ -40,7 +40,7 @@ class ina229:
       self.cal = cal
       self. current_lsb: float | None = cal.current_lsb if cal else None
 
-    # ------- low level helpers -------
+   # ------- low level helpers -------
     
    @staticmethod
    def _cmd(reg: bytes, read:bool) -> int:
@@ -56,6 +56,16 @@ class ina229:
          return self.spi.transfer_ina_in(tx)
       elif self.device == "ina_out":
          return self.spi.transfer_ina_out(tx)
+      
+   def twos_complement(value: int, bits: int) -> int:
+         '''
+         Reads a signed value and converts it to a negative integer in python
+         '''
+         signed = 1 <<(bits -1)
+         if value & signed:
+            return value - (1<<bits) # if the sign bit is set, subtract 2^bits to get the negative value
+         
+         return value # if the sign bit is not set, return the value as is
     
     # ------- register read/write -------
    def read_u16(self, reg: int) -> int:
@@ -90,13 +100,7 @@ class ina229:
       raw = (rx[1] << 16) | (rx[2] << 8) | rx[3] #combines three separate bytes into one 24-bit number.
 
       # Convert from 24-bit two's complement to a Python signed integer.
-      # 0x800000 = binary 1000 0000 0000 0000 0000 0000
-      # This checks if the sign bit (bit 23) is set.
-      # If it is set, the number represents a negative value.
-      if raw & 0x800000:
-          # Subtract 2^24 to convert the raw unsigned number
-          # into a signed negative Python integer.
-          raw -= 1 << 24
+      raw = self.twos_complement(raw, 24)
 
       # Return the signed measurement value.
       # Return is a raw number and must be scaled (e.g. by CURRENT_LSB) to become a real physical quantity.
@@ -140,22 +144,15 @@ class ina229:
       # into the specified register.
       self._xfer(tx)
 
-   def twos_complement(value: int, bits: int) -> int:
-         '''
-         Reads a signed value and converts it to a negative integer in python
-         '''
-         signed = 1 <<(bits -1)
-         if value & signed:
-            return value - (1<<bits) # if the sign bit is set, subtract 2^bits to get the negative value
-         
-         return value # if the sign bit is not set, return the value as is
-
 # INA229 Initialization 
 
+calibration = ina229Cal(R_SHUNT, CURRENT_MAX, CURRENT_LSB, 0)
+spi_obj = rpiSpi()
+sensor = ina229(spi_obj, 'ina_in', calibration)
 
 # CONFIG:
 # ADCRANGE = 0 (+/-163.84 mV)
-write_register(REG_CONFIG, 0x0000) # AI wrote
+sensor.write_u16(REG_CONFIG, 0x0000) # AI wrote
 
 
 # ADC_CONFIG:
@@ -166,19 +163,18 @@ write_register(REG_CONFIG, 0x0000) # AI wrote
 # AVG = 1 <- discuss with leads if we want longer averaging. The basic question is how frequently do we want our samples?
 # we also have to take noise into account (can also use external filters)
 adc_config = 0xB000 | (5 << 9) | (5 << 6) 
-write_register(REG_ADC_CONFIG, adc_config) 
+sensor.write_u16(REG_ADC_CONFIG, adc_config) 
 
 
 # SHUNT_CAL
-write_register(REG_SHUNT_CAL, SHUNT_CAL) # sets up values for shunt resistor in sensor
+sensor.write_u16(REG_SHUNT_CAL, SHUNT_CAL) # sets up values for shunt resistor in sensor
 
 
 # Give time for first conversion (AI says we need this)
 time.sleep(0.1)
 
-try:
-   while True: # infinite loop
-       raw_current = read_register_24(REG_CURRENT) # reads raw current value from sensor
+while True: # infinite loop
+       raw_current = sensor.read_s24(REG_CURRENT) # reads raw current value from sensor
        current_amps = raw_current * CURRENT_LSB # converts raw current to actual value (from manual)
 
 
@@ -186,9 +182,3 @@ try:
 
 
        time.sleep(0.5) # AI says this makes it update twice per second
-
-
-# AI wrote this part, says that Ctrl+C interrupts to close program
-except KeyboardInterrupt:
-   spi.close()
-   print("\nSPI closed")
