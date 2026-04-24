@@ -7,7 +7,7 @@ try:
 except ImportError:
     spidev = None
 
-from .gpio import rpiGpio
+from .gpio import piGpio
 
 class spiError(RuntimeError):
     """SPI related errors"""
@@ -24,7 +24,7 @@ class spiConfig:
     bits_per_word: int = 8
 
 class rpiSpi:
-    def __init__(self, config: spiConfig = spiConfig(), gpio: rpiGpio | None = None):
+    def __init__(self, config: spiConfig = spiConfig(), gpio: piGpio | None = None):
         self.config = config
         self.gpio = gpio
         self._lock = threading.Lock()
