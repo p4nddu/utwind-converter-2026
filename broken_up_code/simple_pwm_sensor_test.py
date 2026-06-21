@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pwm_controller import PwmController
-from sensor_reader import SensorReader
+from pwm_control import PwmController
+from snesor_read import SensorReader
 
 import signal
 import time
@@ -86,7 +86,12 @@ class SimplePwmSensorTest:
         self.pi.set_mode(self.pins.gd_enable_bcm, pigpio.OUTPUT)
         self.pi.write(self.pins.gd_enable_bcm, 0)
 
+        self.pi.set_mode(self.pins.gd_enable_bcm2, pigpio.OUTPUT)
+        self.pi.write(self.pins.gd_enable_bcm2, 0)
+
         self.pi.set_mode(self.pins.pwm_bcm, pigpio.OUTPUT)
+        self.pi.set_mode(self.pins.pwm_bcm2, pigpio.OUTPUT)
+
 
     def setup_spi(self) -> None:
         print("[SPI] Opening SPI...")
@@ -102,6 +107,8 @@ class SimplePwmSensorTest:
         try:
             if self.pwm is not None:
                 self.pwm.set_pwm_duty(0.0)
+                self.pwm.set_pwm_duty(0.0)
+
                 self.pwm.set_gd_enable(False)
 
                 self.pi.write(self.pins.cs_ina_in_bcm, 1)
@@ -296,3 +303,4 @@ class SimplePwmSensorTest:
 
     def run(self) -> None:
         self.run_sensor_read(0)
+

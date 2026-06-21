@@ -21,12 +21,25 @@ class PwmController:
     def set_gd_enable(self, enable: bool) -> None:
         self.pi.write(self.pins.gd_enable_bcm, 1 if enable else 0)
 
+    def set_gd_enable2(self, enable: bool) -> None:
+        self.pi.write(self.pins.gd_enable_bcm2, 1 if enable else 0)
+
     def set_pwm_duty(self, duty_fraction: float) -> None:
         duty = max(0.0, min(1.0, duty_fraction))
         duty_ppm = int(round(duty * 1_000_000))
 
         self.pi.hardware_PWM(
             self.pins.pwm_bcm,
+            self.pwm_cfg.frequency_hz,
+            duty_ppm,
+        )
+
+    def set_pwm_duty2(self, duty_fraction: float) -> None:
+        duty = max(0.0, min(1.0, duty_fraction))
+        duty_ppm = int(round(duty * 1_000_000))
+
+        self.pi.hardware_PWM(
+            self.pins.pwm_bcm2,
             self.pwm_cfg.frequency_hz,
             duty_ppm,
         )
@@ -40,6 +53,7 @@ class PwmController:
     ) -> None:
         if steps <= 0:
             self.set_pwm_duty(stop)
+            self.set_pwm_duty2(stop)
             return
 
         dt = ramp_time_s / steps
@@ -48,16 +62,24 @@ class PwmController:
             frac = i / steps
             duty = start + (stop - start) * frac
             self.set_pwm_duty(duty)
+            self.set_pwm_duty2(duty)
+
             time.sleep(dt)
 
     def run(self) -> None:
         target_duty = max(0.0, min(1.0, self.pwm_cfg.duty_fraction))
 
         self.set_gd_enable(False)
+        self.set_gd_enable2(False)
+
         self.set_pwm_duty(0.0)
+        self.set_pwm_duty2(0.0)
+
         time.sleep(0.25)
 
         self.set_gd_enable(True)
+        self.set_gd_enable2(True)
+
         time.sleep(0.1)
 
         self.ramp_pwm(

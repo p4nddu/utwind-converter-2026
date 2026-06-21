@@ -16,7 +16,7 @@ class PinConfig:
     pwm_bcm2: int = 13
     
     gd_enable_bcm: int = 5
-    gb_enable_bcm2: int = 6
+    gd_enable_bcm2: int = 6
 
     cs_ina_in_bcm: int = 25
     cs_ina_out_bcm: int = 17
