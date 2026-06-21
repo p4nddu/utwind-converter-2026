@@ -39,8 +39,8 @@ class PwmTestError(RuntimeError):
 
 @dataclass(frozen=True)
 class TestPins:
-    pwm_bcm: int = 12        # physical pin 32
-    gd_enable_bcm: int = 6   # physical pin 31
+    pwm_bcm: int = 13        # physical pin 32
+    gd_enable_bcm: int = 5   # physical pin 31
 
 
 @dataclass(frozen=True)

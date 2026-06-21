@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from mcp3208 import MCP3208
+from drivers.mcp3208 import MCP3208
 import pigpio 
 import time
 
