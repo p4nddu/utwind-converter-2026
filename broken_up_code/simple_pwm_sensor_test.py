@@ -301,22 +301,12 @@ class SimplePwmSensorTest:
             f"Vout={vout:.3f} V"
         )
 
-    def calculate_power(self) -> None:
-        output_current = self.read_current("ina_out")
-        output_voltage = self.read_scaled_voltage(self.sensor_cfg.vout_channel)
-
-        return output_current * output_voltage
 
     def run(self) -> None:
         self.run_sensor_read(0)
 
 
     def calculate_power(self, voltage_out, current_out) -> float:
-        """
-        Returns output power in Watts.
-        """
-        ##vout = self.read_scaled_voltage(self.sensor_cfg.vout_channel)
-        #current_out = self.read_current("ina_out")
 
         power = voltage_out * current_out
 
