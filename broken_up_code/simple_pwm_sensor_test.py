@@ -310,3 +310,62 @@ class SimplePwmSensorTest:
     def run(self) -> None:
         self.run_sensor_read(0)
 
+
+    def calculate_power(self, voltage_out, current_out) -> float:
+        """
+        Returns output power in Watts.
+        """
+        ##vout = self.read_scaled_voltage(self.sensor_cfg.vout_channel)
+        #current_out = self.read_current("ina_out")
+
+        power = voltage_out * current_out
+
+        return power
+
+
+
+    def run_po_loop(
+        self,
+        target_voltage: float,
+        current_pwm: float,
+        previous_power: float,
+        previous_voltage: float,
+        step_size: float = 0.002,
+    ) -> tuple[float, float, float]:
+
+        MAX_PWM = 41.25 / 100.0
+
+        current_voltage = self.read_scaled_voltage(self.sensor_cfg.vout_channel)
+
+        current = self.read_current("ina_out")
+
+        current_power = self.calculate_power(voltage_out=current_voltage, current_out=current)
+
+        delta_p = current_power - previous_power
+        delta_v = current_voltage - previous_voltage
+
+        # Voltage protection
+        if current_voltage > target_voltage:
+            new_pwm = current_pwm - step_size
+
+        else:
+            if delta_p > 0:
+                if delta_v > 0:
+                    new_pwm = current_pwm + step_size
+                else:
+                    new_pwm = current_pwm - step_size
+            else:
+                if delta_v > 0:
+                    new_pwm = current_pwm - step_size
+                else:
+                    new_pwm = current_pwm + step_size
+
+        
+        
+        new_pwm = max(0.0, min(MAX_PWM, new_pwm))
+
+        return (
+            new_pwm,
+            current_power,
+            current_voltage,
+        )

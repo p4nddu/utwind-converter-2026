@@ -73,7 +73,7 @@ if __name__ == "__main__":
 # pwm shutdown 
 
 #PO
-#set voltage targe
+#set voltage target
 #change slightly
 #use power functe
 #decide if going up or down
