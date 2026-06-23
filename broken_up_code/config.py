@@ -18,14 +18,14 @@ class PinConfig:
     gd_enable_bcm: int = 5
     gb_enable_bcm2: int = 6
 
-    cs_ina_in_bcm: int = 25
-    cs_ina_out_bcm: int = 17
-    cs_adc_bcm: int = 27
+    cs_ina_in_bcm: int = 23
+    cs_ina_out_bcm: int = 24
+    cs_adc_bcm: int = 25
 
 
 @dataclass(frozen=True)
 class PwmConfig:
-    frequency_hz: int = 10_000
+    frequency_hz: int = 100_000
     duty_fraction: float = 0.50
     ramp_time_s: float = 2.0
     ramp_steps: int = 100

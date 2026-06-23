@@ -30,7 +30,7 @@ def sign_extend(value: int, bits:int) -> int:
 @dataclass(frozen=True)
 class INA229Config:
    rshunt_ohms: float = 0.01
-   max_expected_current: float = 10
+   max_expected_current: float = 11
 
    use_low_shunt_range: bool = False
 
@@ -57,10 +57,10 @@ class INA229:
    # -------------- helpers --------------
 
    def _compute_shunt_cal(self) -> int:
-      shunt_cal = (13107.2e6 & self.current_lsb * self.config.rshunt_ohms)
+      shunt_cal = (13107.2e6 * self.current_lsb * self.config.rshunt_ohms)
 
       if self.config.use_low_shunt_range:
-         self.shunt_cal *= 4.0
+         shunt_cal *= 4.0
 
       return int(round(shunt_cal)) & 0x7FFF
    
@@ -89,7 +89,7 @@ class INA229:
       
       return data
    
-   def write_reg(self, sensor: str, reg_addr: int, value: int, num_bytes: int) -> int:
+   def write_reg(self, sensor: str, reg_addr: int, value: int, num_bytes: int) -> None:
       cmd = ((reg_addr & 0x3F) << 2) | 0x00
       tx = [cmd]
 
@@ -118,16 +118,22 @@ class INA229:
    def read_vshunt(self, sensor: str) -> float:
       raw24 = self.read_reg(sensor, REG_VSHUNT, 3)
 
-      raw20 = (raw24 >> 4) * 0xFFFFF
+      raw20 = (raw24 >> 4) & 0xFFFFF
       raw_signed = sign_extend(raw20, 20)
 
       lsb = 78.125e-9 if self.config.use_low_shunt_range else 312.5e-9
       return raw_signed * lsb
+
+   def read_ids_ina(self, sensor: str) -> tuple[int, int]:
+      man_id = self.read_reg(sensor, REG_MANUFACTURER_ID, 2)
+      dev_id = self.read_reg(sensor, REG_DEVICE_ID, 2)
+
+      return man_id, dev_id
    
 
    # -------------- utility --------------
 
-   def reset_ina (self, sensor: str) -> None:
+   def reset_ina(self, sensor: str) -> None:
       self.write_reg(sensor, REG_CONFIG, 0x8000, 2)
       time.sleep(0.010)
 
@@ -148,12 +154,6 @@ class INA229:
 
       time.sleep(0.050)
 
-   def read_ids_ina(self, sensor: str) -> tuple[int, int]:
-      man_id = self.read_reg(sensor, REG_MANUFACTURER_ID, 2)
-      dev_id = self.read_reg(sensor, REG_DEVICE_ID, 2)
-
-      return man_id, dev_id
-   
    def check_ids_ina(self, sensor: str) -> bool:
       man_id, dev_id = self.read_ids_ina(sensor)
 
@@ -161,4 +161,21 @@ class INA229:
          man_id == self.config.expected_manufacturer_id
          and dev_id == self.config.expected_device_id
       )
+   
+   def initialize_ina(self, sensor: str, check_id: bool = True) -> None:
+      self.reset_ina(sensor)
+
+      if check_id and not self.check_ids_ina(sensor):
+         manufacturer_id, device_id = self.read_ids_ina(sensor)
+         raise INA229Error(
+            f"{sensor} id check failed: "
+            f"manufacturer=0x{manufacturer_id:04X}, "
+            f"device=0x{device_id:04X}"
+         )
+      
+      self.configure_ina(sensor)
+
+   def initialize_all_ina(self, check_id: bool = True) -> None:
+      self.initialize_ina("ina_in", check_id=check_id)
+      self.initialize_ina("ina_out", check_id=check_id)
    

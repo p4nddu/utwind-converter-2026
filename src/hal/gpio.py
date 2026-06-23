@@ -195,7 +195,7 @@ class PiGpio:
 
     def set_gd_enable(self, name: str, enable: bool) -> None:
         self._require_init()
-        self.pi.write(self._get_gd_enable_pin(name), 1 if enable else 0)
+        self.pi.write(self.get_gd_enable_pin(name), 1 if enable else 0)
 
 
     # -------------- chip select helpers --------------

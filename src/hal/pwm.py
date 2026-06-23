@@ -31,9 +31,10 @@ class PiPwm:
         if self._inited:
             return
         
-        self.stop_pwm("pwm1")
-        self.stop_pwm("pwm2")
-
+        for pin in (self.gpio.pins.pwm1, self.gpio.pins.pwm2):
+            self.gpio.pi.hardware_PWM(pin, 0, 0)
+            self.gpio.pi.write(pin, 0)
+        
         self._inited = True
     
     def deinit(self) -> None:
@@ -66,7 +67,7 @@ class PiPwm:
         return int(round(duty * 1_000_000))
     
 
-    # -------------- public pwm functions --------------\
+    # -------------- public pwm functions --------------
 
     def set_duty(self, name: str, duty: float) -> None:
         self._require_init()
@@ -86,7 +87,7 @@ class PiPwm:
         channel = name.strip().lower()
         if channel in ("pwm1",):
             self._duty_pwm1 = duty
-        if channel in ("pwm2",):
+        elif channel in ("pwm2",):
             self._duty_pwm2 = duty
         else:
             raise PwmError("unknown pwm channel: use pwm1 or pwm2")
@@ -101,7 +102,7 @@ class PiPwm:
         channel = name.strip().lower()
         if channel in ("pwm1",):
             self._duty_pwm1 = 0.0
-        if channel in ("pwm2",):
+        elif channel in ("pwm2",):
             self._duty_pwm2 = 0.0
         else:
             raise PwmError("unknown pwm channel: use pwm1 or pwm2")

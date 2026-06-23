@@ -22,7 +22,7 @@ class PwmController:
         self.pi.write(self.pins.gd_enable_bcm, 1 if enable else 0)
 
     def set_pwm_duty(self, duty_fraction: float) -> None:
-        duty = max(0.0, min(1.0, duty_fraction))
+        duty = max(self.pwm_cfg.min_duty, min(self.pwm_cfg.max_duty, duty_fraction))
         duty_ppm = int(round(duty * 1_000_000))
 
         self.pi.hardware_PWM(
