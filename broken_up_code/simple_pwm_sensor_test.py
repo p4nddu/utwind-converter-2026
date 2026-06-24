@@ -301,6 +301,8 @@ class SimplePwmSensorTest:
             f"Vout={vout:.3f} V"
         )
 
+        return 
+
 
     def run(self) -> None:
         self.run_sensor_read(0)
@@ -312,50 +314,71 @@ class SimplePwmSensorTest:
 
         return power
 
-
-
     def run_po_loop(
         self,
-        target_voltage: float,
-        current_pwm: float,
         previous_power: float,
         previous_voltage: float,
-        step_size: float = 0.002,
-    ) -> tuple[float, float, float]:
-
-        MAX_PWM = 41.25 / 100.0
+        vref: float,
+        direction: float,   # +1 or -1
+        step_size: float = 0.2,
+    ) -> tuple[float, float, float, float]:
+        """
+        MPPT-style PO loop:
+        adjusts VREF directly to maximize power.
+        """
 
         current_voltage = self.read_scaled_voltage(self.sensor_cfg.vout_channel)
-
         current = self.read_current("ina_out")
 
-        current_power = self.calculate_power(voltage_out=current_voltage, current_out=current)
+        current_power = self.calculate_power(current_voltage, current)
 
+        #check if increase or decrease power/voltage
         delta_p = current_power - previous_power
         delta_v = current_voltage - previous_voltage
 
-        # Voltage protection
-        if current_voltage > target_voltage:
-            new_pwm = current_pwm - step_size
-
-        else:
-            if delta_p > 0:
-                if delta_v > 0:
-                    new_pwm = current_pwm + step_size
-                else:
-                    new_pwm = current_pwm - step_size
+        # --- PO decision (hill climbing on power curve) ---
+        if delta_p > 0:
+            # keep going same direction
+            if delta_v > 0:
+                vref += step_size * direction
             else:
-                if delta_v > 0:
-                    new_pwm = current_pwm - step_size
-                else:
-                    new_pwm = current_pwm + step_size
+                vref -= step_size * direction
+        else:
+            # reverse direction
+            direction *= -1
+            if delta_v > 0:
+                vref += step_size * direction
+            else:
+                vref -= step_size * direction
 
-        
-        
-        new_pwm = max(0.0, min(MAX_PWM, new_pwm))
+        # clamp (important for safety)
+        vref = max(0.0, min(60.0, vref))
 
-        return (
-            new_pwm,
-            current_power,
-            current_voltage,
-        )
+        return vref, current_power, current_voltage, direction
+
+    
+    def pi_voltage_control(
+        self,
+        vout: float,
+        vref: float,
+        dt: float,
+    ) -> float:
+
+        # initialize if not existing
+        if not hasattr(self, "pi_integral"):
+            self.pi_integral = 0.0
+
+        error = vref - vout
+        self.pi_integral += error * dt
+
+        # PI gains (YOU WILL TUNE THESE)
+        KP = 0.01
+        KI = 0.005
+
+        u = KP * error + KI * self.pi_integral
+
+        MAX_PWM = 41.25 / 100.0
+
+        pwm = max(0.0, min(MAX_PWM, u))
+
+        return pwm
