@@ -3,12 +3,33 @@ from __future__ import annotations
 import signal
 import time
 
+import pigpio
+
+from config import PinConfig, PwmConfig
 from simple_pwm_sensor_test import SimplePwmSensorTest
 from pwm_control import PwmController
 
+
 def main() -> None:
     test = SimplePwmSensorTest()
-    pwm = PwmController()
+    
+
+    pi = pigpio.pi()
+
+    if not pi.connected:
+        raise RuntimeError(
+            "Could not connect to pigpio daemon. "
+            "Run: sudo systemctl start pigpiod"
+        )
+
+    pins = PinConfig()
+    pwm_cfg = PwmConfig()
+
+    pwm = PwmController(
+        pi=pi,
+        pins=pins,
+        pwm_cfg=pwm_cfg,
+    )
 
 
     signal.signal(signal.SIGINT, test.request_stop)
@@ -19,7 +40,7 @@ def main() -> None:
 
         print("\nStarting sensor print loop. Press Ctrl+C to stop.\n")
 
-        test.run_pwm()
+        #test.run_pwm()
 
         pwm.init_pwm()
         current_pwm1_duty = 0.0
@@ -88,9 +109,14 @@ def main() -> None:
                 0.0,
                 min(1.0, test.pwm_cfg.duty_fraction),
             )
+            
+            if test.pwm is not None:
+                test.pwm.set_gd_enable(False)
+                test.pwm.set_gd_enable2(False)
 
-            test.pwm.set_gd_enable(False)
-            test.pwm.set_gd_enable2(False)
+            
+            if pi is not None and pi.connected:
+                pi.stop()
 
 
         finally:
