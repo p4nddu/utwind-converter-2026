@@ -8,6 +8,7 @@ from hal.pwm import PiPwm, PwmConfig
 from drivers.mcp3208 import MCP3208
 from drivers.si8274 import SI8274
 
+running = True
 
 TARGET_DUTY = 0.50
 PWM_FREQ = 10_000
@@ -17,30 +18,13 @@ RAMP_DELAY = 0.05
 READ_PERIOD = 0.5
 
 # we will keep output side mosfet off for this test
-PWM_CHANNEL = "pwm2"
-GD_DRIVER = "gd2"
-
-running = True
+PWM_CHANNEL = "pwm1"
+GD_DRIVER = "gd1"
 
 
 def handle_signal(signum, frame):
     global running
     running = False
-
-
-def ramp_pwm(pwm: PiPwm, channel: str, start: float, target: float) -> None:
-    duty = start
-
-    if target > start:
-        while duty < target:
-            duty = min(duty + STEP, target)
-            pwm.set_duty(channel, duty)
-            time.sleep(RAMP_DELAY)
-    else:
-        while duty > target:
-            duty = max(duty - STEP, target)
-            pwm.set_duty(channel, duty)
-            time.sleep(RAMP_DELAY)
 
 
 def main() -> int:
@@ -76,12 +60,6 @@ def main() -> int:
         vout = adc.read_vout()
         print(f"Vin = {vin:.3f} V | Vout = {vout:.3f} V")
 
-        print(f"ENABLING gate driver...")
-        gate.enable(GD_DRIVER)
-
-        print(f"RAMPING {PWM_CHANNEL} to {TARGET_DUTY * 100:.1f}%")
-        ramp_pwm(pwm, PWM_CHANNEL, 0.0, TARGET_DUTY)
-
         print("starting loop. press Ctrl+C to stop...")
         while running:
             vin = adc.read_vin()
@@ -96,11 +74,6 @@ def main() -> int:
     
     finally:
         print("\nSHUTTING DOWN...")
-
-        try:
-            ramp_pwm(pwm, PWM_CHANNEL, TARGET_DUTY, 0.0)
-        except Exception:
-            pass
 
         try:
             pwm.deinit()

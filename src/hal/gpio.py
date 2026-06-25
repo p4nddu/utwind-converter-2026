@@ -40,12 +40,12 @@ class GpioPins:
     cs_release()
     """
 
-    cs_ina_in: int = 23
-    cs_ina_out: int = 24
-    cs_mcp3208: int = 25
+    cs_ina_in: int = 25
+    cs_ina_out: int = 17
+    cs_mcp3208: int = 27
 
-    gd_enable1: int = 5
-    gd_enable2: int = 6
+    gd_enable1: int = 6
+    gd_enable2: int = 5
 
     pwm1: int = 12
     pwm2: int = 13
