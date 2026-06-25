@@ -94,7 +94,7 @@ class PwmController:
     def run(self) -> None:
         target_duty = max(0.0, min(1.0, self.pwm_cfg.duty_fraction))
 
-        self.init_pwm(self)
+        self.init_pwm()
         current_pwm1_duty = 0.0
         current_pwm2_duty = 0.0
         
