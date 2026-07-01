@@ -10,7 +10,7 @@ from drivers.mcp3208 import MCP3208
 from drivers.si8274 import SI8274
 
 
-PWM_FREQ = 150000
+PWM_FREQ = 300000
 
 DUTY_START = 0.00
 DUTY_STEP = 0.01
