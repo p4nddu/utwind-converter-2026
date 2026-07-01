@@ -21,8 +21,8 @@ class GpioPins:
     - MCP3208 ADC CS:                  GPIO 27
 
     Gate driver enable lines:
-    - GD_ENABLE1: GPIO 16   physical pin 36
-    - GD_ENABLE2: GPIO 6   physical pin 31
+    - GD_ENABLE2: GPIO 16   physical pin 36
+    - GD_ENABLE1: GPIO 6   physical pin 31
 
     Hardware PWM outputs:
     - PWM1: GPIO 12

@@ -16,20 +16,21 @@ VIN_EXPECTED = 5.0
 VOLTAGE_SCALE = 1.5
 VTARGET_RATIO = 2.0
 
-PASS_DUTY = 0.85
+PASS_DUTY = 1.0
 PASS_DUTY_START = 0.00
 BOOST_DUTY_START = 0.00
 BOOST_DUTY_MIN = 0.00
-BOOST_DUTY_MAX = 0.45
+BOOST_DUTY_MAX = 0.60
 
 LOOP_PERIOD = 1.0 / 150.0
 LOG_PERIOD = 0.25
-MAX_DUTY_STEP = 0.001
+PASS_DUTY_STEP = 0.01
+BOOST_DUTY_STEP = 0.001
 VOLTAGE_KP = 0.01
 FILTER_ALPHA = 0.25
 
-VIN_MIN_TO_RUN = 0.1
-VIN_MAX_TO_RUN = 15.0
+VIN_MIN_TO_RUN = 0.5
+VIN_MAX_TO_RUN = 10.0
 PASS_FROM_BOOST_MARGIN = 0.30
 VOUT_MARGIN = 0.10
 MAX_VOUT_ABS = 12.0
@@ -202,7 +203,7 @@ def main() -> int:
 
             if pass_duty < PASS_DUTY:
                 mode = "PASS_RAMP"
-                pass_duty = step_toward(pass_duty, PASS_DUTY, MAX_DUTY_STEP)
+                pass_duty = step_toward(pass_duty, PASS_DUTY, PASS_DUTY_STEP)
                 desired_duty = 0.0
                 boost_duty = 0.0
                 pwm.stop_pwm("pwm2")
@@ -215,10 +216,10 @@ def main() -> int:
                 if mode == "BOOST":
                     desired_duty = boost_duty + boost_duty_delta(vout_f, vtarget)
                     desired_duty = clamp(desired_duty, BOOST_DUTY_MIN, BOOST_DUTY_MAX)
-                    boost_duty = step_toward(boost_duty, desired_duty, MAX_DUTY_STEP)
+                    boost_duty = step_toward(boost_duty, desired_duty, BOOST_DUTY_STEP)
                 else:
                     desired_duty = 0.0
-                    boost_duty = step_toward(boost_duty, 0.0, MAX_DUTY_STEP)
+                    boost_duty = step_toward(boost_duty, 0.0, BOOST_DUTY_STEP)
 
             if mode == "PASS_RAMP":
                 gate.enable("gd1")
@@ -258,7 +259,7 @@ def main() -> int:
 
         try:
             while boost_duty > 0:
-                boost_duty = max(0.0, boost_duty - MAX_DUTY_STEP)
+                boost_duty = max(0.0, boost_duty - BOOST_DUTY_STEP)
                 pwm.set_duty("pwm2", boost_duty)
                 time.sleep(LOOP_PERIOD)
         except Exception:

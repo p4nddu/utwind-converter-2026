@@ -10,11 +10,11 @@ from drivers.mcp3208 import MCP3208
 from drivers.si8274 import SI8274
 
 
-PWM_FREQ = 300000
+PWM_FREQ = 150_000
 
 DUTY_START = 0.00
 DUTY_STEP = 0.01
-DUTY_MAX = 0.80
+DUTY_MAX = 0.75
 
 RAMP_DELAY = 0.10
 READ_PERIOD = 0.05
