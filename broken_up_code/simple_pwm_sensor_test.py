@@ -107,9 +107,10 @@ class SimplePwmSensorTest:
         try:
             if self.pwm is not None:
                 self.pwm.set_pwm_duty(0.0)
-                self.pwm.set_pwm_duty(0.0)
+                self.pwm.set_pwm_duty2(0.0)
 
                 self.pwm.set_gd_enable(False)
+                self.pwm.set_gd_enable2(False)
 
                 self.pi.write(self.pins.cs_ina_in_bcm, 1)
                 self.pi.write(self.pins.cs_ina_out_bcm, 1)

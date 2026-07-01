@@ -16,12 +16,12 @@ class GpioPins:
     Raspberry Pi Zero 2W pinout for load control:
 
     Manual cs lines, active LOW:
-    - INA229_in current sensor CS:     GPIO 23
-    - INA229_out current sensor CS:    GPIO 24
-    - MCP3208 ADC CS:                  GPIO 25
+    - INA229_in current sensor CS:     GPIO 25
+    - INA229_out current sensor CS:    GPIO 17
+    - MCP3208 ADC CS:                  GPIO 27
 
     Gate driver enable lines:
-    - GD_ENABLE1: GPIO 5   physical pin 29
+    - GD_ENABLE1: GPIO 16   physical pin 36
     - GD_ENABLE2: GPIO 6   physical pin 31
 
     Hardware PWM outputs:
@@ -45,7 +45,7 @@ class GpioPins:
     cs_mcp3208: int = 27
 
     gd_enable1: int = 6
-    gd_enable2: int = 5
+    gd_enable2: int = 16
 
     pwm1: int = 12
     pwm2: int = 13
@@ -173,15 +173,15 @@ class PiGpio:
     def force_safe_outputs(self) -> None:
         self._require_init()
 
-        self.set_gd_enable("gd1", False)
-        self.set_gd_enable("gd2", False)
-
         for pin in (
             self.pins.pwm1,
             self.pins.pwm2,
         ):
             self.pi.hardware_PWM(pin, 0, 0)
             self.pi.write(pin, 0)
+
+        self.set_gd_enable("gd1", False)
+        self.set_gd_enable("gd2", False)
 
         for pin in (
             self.pins.cs_ina_in,

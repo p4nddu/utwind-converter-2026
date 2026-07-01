@@ -9,10 +9,10 @@ class PwmError(RuntimeError):
 
 @dataclass(frozen=True)
 class PwmConfig:
-    frequency_hz: int = 100_000
+    frequency_hz: int = 300_000
 
     min_duty: float = 0.0
-    max_duty: float = 0.95
+    max_duty: float = 0.85
 
 
 class PiPwm:

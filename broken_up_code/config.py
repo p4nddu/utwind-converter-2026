@@ -15,17 +15,17 @@ class PinConfig:
     pwm_bcm: int = 12
     pwm_bcm2: int = 13
     
-    gd_enable_bcm: int = 5
-    gd_enable_bcm2: int = 6
+    gd_enable_bcm: int = 6
+    gd_enable_bcm2: int = 5
 
-    cs_ina_in_bcm: int = 23
-    cs_ina_out_bcm: int = 24
-    cs_adc_bcm: int = 25
+    cs_ina_in_bcm: int = 25
+    cs_ina_out_bcm: int = 17
+    cs_adc_bcm: int = 27
 
 
 @dataclass(frozen=True)
 class PwmConfig:
-    frequency_hz: int = 100_000
+    frequency_hz: int = 10_000
     duty_fraction: float = 0.50
     ramp_time_s: float = 2.0
     ramp_steps: int = 100
@@ -51,8 +51,8 @@ class SensorConfig:
     vout_channel: int = 1
 
     rshunt_ohms: float = 0.01
-    max_expected_current_a: float = 11
-    use_low_shunt_range: bool = False
+    max_expected_current_a: float = 1
+    use_low_shunt_range: bool = True
 
 
 class SimpleTestError(RuntimeError):

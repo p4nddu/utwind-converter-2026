@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import signal
 import time
+import sys
 
 import pigpio
 
@@ -10,9 +11,14 @@ from simple_pwm_sensor_test import SimplePwmSensorTest
 from pwm_control import PwmController
 
 
+
+def signal_handler(signum, frame):
+    sys.exit(0)
+
+
 def main() -> None:
     test = SimplePwmSensorTest()
-    
+
 
     pi = pigpio.pi()
 
@@ -41,30 +47,34 @@ def main() -> None:
         print("\nStarting sensor print loop. Press Ctrl+C to stop.\n")
 
         #test.run_pwm()
-
+        print("\nInit pwm")
         pwm.init_pwm()
         current_pwm1_duty = 0.0
         current_pwm2_duty = 0.0
 
+        print("\nreading initial Voltage")
         previous_power = 0.0
         previous_voltage = test.read_scaled_voltage(test.sensor_cfg.vout_channel)
 
         vref = 15.0
         direction = 1.0  # IMPORTANT: MPPT search direction
 
+        print("\nSetting time")
         step = 0
         next_time = time.time()
         vin = 0.0
 
         #measure vout and start loop only when vin is 15
-        while vin <= 15.0:
-            vin = test.read_scaled_voltage(test.sensor_cfg.vin_channel)
+        #while vin <= 15.0:
+            #vin = test.read_scaled_voltage(test.sensor_cfg.vin_channel)
 
         vref = vin
+        print("\nEntering loop")
 
         while test.running:
             try:
                 test.run_sensor_read(step)
+
 
                 vout = test.read_scaled_voltage(test.sensor_cfg.vout_channel)
                 iout = test.read_current("ina_out")
@@ -124,7 +134,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 
 
 
